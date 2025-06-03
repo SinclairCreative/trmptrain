@@ -22,21 +22,21 @@ const twitterEffects = [
 
 // Place Twitter Storm power-up randomly - DOUBLED FREQUENCY
 function placeTweetStorm() {
-    if (Math.random() > 0.04 || twitterStorm || twitterStormActive) return; // Changed from 0.08 to 0.04
-    
+    if (Math.random() > 0.2 || twitterStorm || twitterStormActive) return; // Increased chance
+
     let attempts = 0;
     twitterStorm = createRandomPosition();
-    
+
     while (isPositionOccupied(twitterStorm) && attempts < 50) {
         attempts++;
         twitterStorm = createRandomPosition();
     }
-    
+
     if (attempts >= 50) {
         twitterStorm = null;
         return;
     }
-    
+
     // Auto-remove after 10 seconds
     setTimeout(() => {
         twitterStorm = null;
@@ -187,10 +187,10 @@ function createTwitterStormAnimation() {
 // Draw Twitter Storm on game canvas
 function drawTwitterStorm() {
     if (!twitterStorm || typeof window.ctx === 'undefined' || typeof window.gridSize === 'undefined') return;
-    
+
     // Pulsating effect
     const pulseSize = Math.sin(Date.now() / 150) * 1.5;
-    
+
     window.ctx.fillStyle = '#1DA1F2';
     window.ctx.beginPath();
     window.ctx.arc(
@@ -201,9 +201,9 @@ function drawTwitterStorm() {
         Math.PI * 2
     );
     window.ctx.fill();
-    
+
     // Twitter bird icon
-    window.ctx.fillStyle = '#ffffff';
+    window.ctx.fillStyle = '#1DA1F2';
     window.ctx.font = '14px FontAwesome';
     window.ctx.textAlign = 'center';
     window.ctx.textBaseline = 'middle';
