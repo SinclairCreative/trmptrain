@@ -1,9 +1,10 @@
 version: '3.8'
 
 services:
-  trump-train:
+  trmptrain:
     build: .
     ports:
       - "8080:80"
-    container_name: trump-train-game
+    volumes:
+      - .:/usr/share/nginx/html:ro
     restart: unless-stopped

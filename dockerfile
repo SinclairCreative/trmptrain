@@ -1,6 +1,6 @@
 FROM nginx:alpine
 
-# Copy game files to nginx web directory
+# Copy game files to nginx html directory
 COPY . /usr/share/nginx/html/
 
 # Copy custom nginx config if needed

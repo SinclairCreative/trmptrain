@@ -64,7 +64,7 @@ let boostMode = false;
 let boostTickCounter = 0;
 
 // User settings
-let autoPauseEnabled = false;
+let autoPauseEnabled = true; // Always ON by default
 let hapticEnabled = true;
 
 // Score and resources
@@ -211,11 +211,6 @@ function setupEventListeners() {
             soundEnabled = !soundEnabled;
             const btn = getElement('sound-btn');
             if (btn) btn.textContent = `SOUND: ${soundEnabled ? 'ON' : 'OFF'}`;
-        }},
-        { id: 'auto-pause-btn', handler: () => {
-            autoPauseEnabled = !autoPauseEnabled;
-            const btn = getElement('auto-pause-btn');
-            if (btn) btn.textContent = `AUTO-PAUSE: ${autoPauseEnabled ? 'ON' : 'OFF'}`;
         }},
         { id: 'haptic-btn', handler: () => {
             hapticEnabled = !hapticEnabled;
@@ -530,26 +525,42 @@ function handleResourceConsumption(head) {
     for (let i = 0; i < allAssets.length; i++) {
         if (head.x === allAssets[i].x && head.y === allAssets[i].y) {
             const workerBonus = Math.floor(workforce / 1000);
-            capital += 5 * economicCycle + workerBonus;
+            let baseValue = 5 * economicCycle + workerBonus;
+            
+            // Apply Twitter Storm effect for double assets
+            if (twitterStormActive && twitterStormEffect === 'TAX BREAK') {
+                baseValue *= 2;
+            }
+            
+            capital += baseValue;
             assetsConsumed++;
-            inequalityLevel = Math.min(inequalityLevel + 2, 100);
+            
+            // Adjust inequality progression based on level
+            let inequalityIncrease = 2;
+            if (currentLevel >= 7) { // Presidency levels
+                inequalityIncrease = -15; // Drain inequality during presidency
+            } else if (currentLevel >= 5) { // Near presidency
+                inequalityIncrease = 8; // Faster rise
+            }
+            inequalityLevel = Math.max(-100, Math.min(inequalityLevel + inequalityIncrease, 100));
 
             createEnhancedConsumptionEffect(
                 allAssets[i].x * gridSize + gridSize/2, 
                 allAssets[i].y * gridSize + gridSize/2, 
                 getComputedStyle(document.documentElement).getPropertyValue('--wealth').trim(),
-                Math.floor(5 * economicCycle + workerBonus)
+                Math.floor(baseValue)
             );
 
             allAssets.splice(i, 1);
             placeAsset();
 
-            if (allLabor.length < currentLevel && Math.random() > 0.6) {
-                setTimeout(() => placeLabor(), 2000);
+            // Increase chance for labor and community spawning
+            if (allLabor.length < currentLevel && Math.random() > 0.5) {
+                setTimeout(() => placeLabor(), 1500);
             }
 
-            if (allCommunities.length < currentLevel && Math.random() > 0.8) {
-                setTimeout(() => placeCommunity(), 3000);
+            if (allCommunities.length < currentLevel && Math.random() > 0.7) {
+                setTimeout(() => placeCommunity(), 2000);
             }
 
             checkLevelProgression();
@@ -852,9 +863,9 @@ function drawResources() {
     const workerColor = getComputedStyle(document.documentElement).getPropertyValue('--worker').trim() || '#007bff';
     const peopleColor = getComputedStyle(document.documentElement).getPropertyValue('--people').trim() || '#6f42c1';
 
-    // Draw all assets
-    ctx.fillStyle = wealthColor;
+    // Draw all assets with proper colors
     allAssets.forEach(asset => {
+        ctx.fillStyle = wealthColor;
         ctx.beginPath();
         ctx.arc(
             asset.x * gridSize + gridSize/2,
@@ -865,16 +876,17 @@ function drawResources() {
         );
         ctx.fill();
 
+        // Ensure icon is colored
         ctx.fillStyle = wealthColor;
-        ctx.font = '14px FontAwesome';
+        ctx.font = 'bold 14px FontAwesome';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText('\uf155', asset.x * gridSize + gridSize/2, asset.y * gridSize + gridSize/2);
+        ctx.fillText('💰', asset.x * gridSize + gridSize/2, asset.y * gridSize + gridSize/2);
     });
 
-    // Draw all labor
-    ctx.fillStyle = workerColor;
+    // Draw all labor with proper colors
     allLabor.forEach(laborPos => {
+        ctx.fillStyle = workerColor;
         ctx.beginPath();
         ctx.arc(
             laborPos.x * gridSize + gridSize/2,
@@ -885,16 +897,17 @@ function drawResources() {
         );
         ctx.fill();
 
+        // Ensure icon is colored
         ctx.fillStyle = workerColor;
-        ctx.font = '14px FontAwesome';
+        ctx.font = 'bold 14px FontAwesome';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText('\uf508', laborPos.x * gridSize + gridSize/2, laborPos.y * gridSize + gridSize/2);
+        ctx.fillText('👷', laborPos.x * gridSize + gridSize/2, laborPos.y * gridSize + gridSize/2);
     });
 
-    // Draw all communities
-    ctx.fillStyle = peopleColor;
+    // Draw all communities with proper colors
     allCommunities.forEach(communityPos => {
+        ctx.fillStyle = peopleColor;
         ctx.beginPath();
         ctx.arc(
             communityPos.x * gridSize + gridSize/2,
@@ -905,11 +918,12 @@ function drawResources() {
         );
         ctx.fill();
 
+        // Ensure icon is colored
         ctx.fillStyle = peopleColor;
-        ctx.font = '14px FontAwesome';
+        ctx.font = 'bold 14px FontAwesome';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText('\uf0c0', communityPos.x * gridSize + gridSize/2, communityPos.y * gridSize + gridSize/2);
+        ctx.fillText('👥', communityPos.x * gridSize + gridSize/2, communityPos.y * gridSize + gridSize/2);
     });
 }
 
@@ -930,13 +944,12 @@ function drawCorporation() {
 
 function drawCapitalOnSnake() {
     clearCapitalTexts();
-
     if (corporation.length <= 1) return;
 
     let formattedCapital = formatCapital(capital);
     let numberPart = '';
     let suffix = '';
-
+    
     if (formattedCapital.includes('M')) {
         numberPart = formattedCapital.substring(0, formattedCapital.indexOf('M'));
         suffix = 'M';
@@ -949,21 +962,20 @@ function drawCapitalOnSnake() {
     } else {
         numberPart = formattedCapital;
     }
-
+    
     let numberDigits = numberPart.split('');
-
+    
     if (corporation.length > 0) {
         createCapitalText('$', corporation[0].x * gridSize + gridSize/2, corporation[0].y * gridSize + gridSize/2);
     }
-
+    
     let maxDigits = Math.min(numberDigits.length, corporation.length - 1);
-
+    
     for (let i = 0; i < maxDigits; i++) {
         let segment = corporation[i + 1];
         if (!segment) continue;
-
+        
         let index = (velocityX > 0 || velocityY > 0) ? numberDigits.length - 1 - i : i;
-
         if (index >= 0 && index < numberDigits.length) {
             createCapitalText(numberDigits[index], segment.x * gridSize + gridSize/2, segment.y * gridSize + gridSize/2);
         }
@@ -984,9 +996,7 @@ function drawCapitalOnSnake() {
 // Set game speed
 function setGameSpeed(speed) {
     if (!speed || typeof speed !== 'number' || speed <= 0) return;
-
     gameSpeed = speed;
-
     if (gameRunning && !gamePaused) {
         clearInterval(gameInterval);
         gameInterval = setInterval(gameLoop, boostMode ? 
@@ -997,7 +1007,14 @@ function setGameSpeed(speed) {
 }
 
 function updateGameSpeed() {
-    const crisisMultiplier = crisisLevel >= 100 ? 0.5 : 1 - (crisisLevel / 1000);
+    // Calculate crisis speed multiplier - 1% increase per 10% crisis
+    let crisisMultiplier = 1;
+    if (crisisLevel >= 100) {
+        crisisMultiplier = 0.5; // Double speed (half interval)
+    } else {
+        crisisMultiplier = 1 - (crisisLevel / 1000); // 1% per 10% crisis
+    }
+    
     const newSpeed = Math.max(20, Math.floor(gameBaseSpeed * crisisMultiplier));
     setGameSpeed(newSpeed);
 }
@@ -1017,11 +1034,9 @@ function fillRegulations() {
 }
 
 // Boost mode toggle
-window.setBoostMode = function(enabled) { 
+window.setBoostMode = function(enabled) {
     if (boostMode === enabled) return;
-
     boostMode = enabled;
-
     if (gameRunning && !gamePaused) {
         clearInterval(gameInterval);
         gameInterval = setInterval(gameLoop, enabled ? 
@@ -1053,25 +1068,25 @@ function createCapitalText(text, x, y) {
     const textElement = document.createElement('div');
     textElement.className = 'capital-text';
     textElement.textContent = text;
-
+    
     // Use exact positioning relative to game container
     const gameContainer = document.getElementById('game-container');
     const canvas = document.getElementById('game-canvas');
-
+    
     if (gameContainer && canvas) {
         const containerRect = gameContainer.getBoundingClientRect();
         const canvasRect = canvas.getBoundingClientRect();
-
+        
         // Calculate offset from container to canvas
         const offsetX = canvasRect.left - containerRect.left;
         const offsetY = canvasRect.top - containerRect.top;
-
+        
         textElement.style.position = 'absolute';
         textElement.style.left = `${offsetX + x}px`;
         textElement.style.top = `${offsetY + y}px`;
         textElement.style.transform = 'translate(-50%, -50%)';
         textElement.style.zIndex = '10';
-
+        
         gameContainer.appendChild(textElement);
         capitalTexts.push(textElement);
     }
@@ -1098,11 +1113,11 @@ function showMessage(text) {
     const message = document.createElement('div');
     message.className = 'level-message';
     message.textContent = text;
-
+    
     const container = document.getElementById('game-container');
     if (container) {
         container.appendChild(message);
-
+        
         setTimeout(() => {
             message.classList.add('fade-out');
             setTimeout(() => {
@@ -1119,15 +1134,15 @@ function showCountdown(count, callback) {
         callback();
         return;
     }
-
+    
     const message = document.createElement('div');
     message.className = 'countdown-message';
     message.textContent = count;
-
+    
     const container = document.getElementById('game-container');
     if (container) {
         container.appendChild(message);
-
+        
         setTimeout(() => {
             if (message.parentNode) {
                 message.remove();
@@ -1144,7 +1159,6 @@ function showPauseIndicator() {
         pauseIndicator.id = 'pause-indicator';
         pauseIndicator.innerHTML = `
             <div class="pause-title">GAME PAUSED</div>
-            
             <div class="pause-instructions">
                 <h4 style="color: var(--corp-color); margin-bottom: 10px;">QUICK GUIDE</h4>
                 <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; text-align: left;">
@@ -1395,6 +1409,11 @@ function checkRegulationCollision(position) {
 }
 
 function handlePeriodicEffects() {
+    // Try to place Twitter Storm more frequently
+    if (Math.random() > 0.85 && typeof placeTweetStorm === 'function') {
+        placeTweetStorm();
+    }
+
     // Update crisis level based on inequality
     if (inequalityLevel > 60 && Math.random() > 0.7) {
         crisisLevel = Math.min(crisisLevel + 5, 100);

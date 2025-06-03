@@ -16,11 +16,17 @@ let currentTouchDirection = null;
 let lastTapTime = 0;
 const SWIPE_COOLDOWN = 50; // Reduced from 150ms for more responsive swipes
 
+let touchStartX = 0;
+let touchStartY = 0;
+let touchContinuousDirection = null;
+let touchContinuousInterval = null;
+let doubleTapTimer = null;
+
 document.addEventListener('DOMContentLoaded', () => {
     // Wait briefly to make sure game.js has initialized
     setTimeout(() => {
         setupControls();
-        setupEnhancedTouchControls();
+        setupMobileControls(); // Add mobile controls setup
     }, 100);
 });
 
@@ -71,6 +77,14 @@ function setupControls() {
         }
     });
 
+    // Touch/swipe controls for the game canvas
+    const canvas = document.getElementById('game-canvas');
+    if (canvas) {
+        canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+        canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+        canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
+    }
+
     // Touch controls - these are mostly hidden but we'll keep the logic for completeness
     const touchButtons = {
         'up': { dx: 0, dy: -1, check: () => window.velocityY !== 1 },
@@ -80,154 +94,141 @@ function setupControls() {
     };
     
     Object.keys(touchButtons).forEach(direction => {
-        const btn = document.getElementById(direction);
-        if (btn) {
-            btn.addEventListener('click', () => {
-                if (Date.now() - window.lastDirectionChange < window.DIRECTION_CHANGE_DELAY) {
-                    return; // Ignore rapid taps
-                }
-                const dir = touchButtons[direction];
-                if (dir.check() && window.gameRunning) {
-                    window.velocityX = dir.dx;
-                    window.velocityY = dir.dy;
-                    window.lastDirectionChange = Date.now();
-                }
+        const button = document.getElementById(direction);
+        if (button) {
+            button.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                handleTouchDirection(direction);
+                startTouchContinuousMovement(direction);
+            });
+            
+            button.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                stopTouchContinuousMovement();
             });
         }
     });
 }
 
-function setupEnhancedTouchControls() {
-    const gameCanvas = document.getElementById('game-canvas');
-    if (!gameCanvas) return;
+// Add mobile controls setup
+function setupMobileControls() {
+    const mobileButtons = {
+        'mobile-up': 'up',
+        'mobile-down': 'down', 
+        'mobile-left': 'left',
+        'mobile-right': 'right'
+    };
     
-    let touchStartX = 0;
-    let touchStartY = 0;
-    let touchStartTime = 0;
-    
-    // Prevent scrolling when touching the canvas
-    gameCanvas.addEventListener('touchstart', function(e) {
-        touchStartX = e.changedTouches[0].screenX;
-        touchStartY = e.changedTouches[0].screenY;
-        touchStartTime = Date.now();
-        
-        // Count touches for pause functionality
-        if (window.gameRunning && e.touches.length === 2) {
-            if (typeof window.togglePause === 'function') {
-                window.togglePause();
-            }
-            e.preventDefault();
-        }
-    }, { passive: false });
-
-    gameCanvas.addEventListener('touchmove', function(e) {
-        e.preventDefault();
-    }, { passive: false });
-
-    // Enhanced swipe detection with double-tap
-    gameCanvas.addEventListener('touchend', function(e) {
-        const currentTime = Date.now();
-        
-        // Check for double tap
-        if (currentTime - lastTapTime < 300) {
-            // Double tap detected
-            if (typeof window.togglePause === 'function') {
-                window.togglePause();
-            }
-            lastTapTime = 0; // Reset to prevent triple-tap issues
-            return;
-        }
-        lastTapTime = currentTime;
-        
-        // Ignore if too close to last swipe
-        if (Date.now() - window.lastSwipeTime < SWIPE_COOLDOWN) return;
-        
-        const touchEndX = e.changedTouches[0].screenX;
-        const touchEndY = e.changedTouches[0].screenY;
-        
-        // Calculate distance and time
-        const diffX = touchStartX - touchEndX;
-        const diffY = touchStartY - touchEndY;
-        const elapsedTime = Date.now() - touchStartTime;
-        
-        // Calculate speed
-        const distance = Math.sqrt(diffX * diffX + diffY * diffY);
-        const speed = distance / elapsedTime;
-        
-        // Minimum distance threshold based on speed
-        const MIN_DISTANCE = speed > 1 ? 5 : 10;
-        
-        // Only detect significant swipes
-        if (distance < MIN_DISTANCE) return;
-        
-        // Determine swipe direction based on which difference is greater
-        if (Math.abs(diffX) > Math.abs(diffY)) {
-            // Horizontal swipe
-            if (diffX > 0) {
-                // Swipe left
-                if (window.velocityX !== 1 && window.gameRunning) {
-                    window.velocityX = -1;
-                    window.velocityY = 0;
-                    showSwipeIndicator('left');
-                }
-            } else {
-                // Swipe right
-                if (window.velocityX !== -1 && window.gameRunning) {
-                    window.velocityX = 1;
-                    window.velocityY = 0;
-                    showSwipeIndicator('right');
-                }
-            }
-        } else {
-            // Vertical swipe
-            if (diffY > 0) {
-                // Swipe up
-                if (window.velocityY !== 1 && window.gameRunning) {
-                    window.velocityX = 0;
-                    window.velocityY = -1;
-                    showSwipeIndicator('up');
-                }
-            } else {
-                // Swipe down
-                if (window.velocityY !== -1 && window.gameRunning) {
-                    window.velocityX = 0;
-                    window.velocityY = 1;
-                    showSwipeIndicator('down');
-                }
-            }
-        }
-        
-        window.lastSwipeTime = Date.now();
-    });
-    
-    // Add enhanced touch visual feedback for control buttons
-    const buttons = ['up', 'down', 'left', 'right'];
-    buttons.forEach(direction => {
-        const btn = document.getElementById(direction);
-        if (!btn) return;
-        
-        // Touch start - hold detection
-        btn.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            btn.classList.add('active');
-            currentTouchDirection = direction;
-            handleTouchDirection(direction);
+    Object.keys(mobileButtons).forEach(buttonId => {
+        const button = document.getElementById(buttonId);
+        if (button) {
+            const direction = mobileButtons[buttonId];
             
-            // Start continuous movement after 200ms
-            touchHoldTimeout = setTimeout(() => {
-                startTouchContinuousMovement(direction);
-            }, 200);
-        });
-        
-        // Touch end/cancel - release
-        ['touchend', 'touchcancel'].forEach(event => {
-            btn.addEventListener(event, (e) => {
+            button.addEventListener('touchstart', (e) => {
                 e.preventDefault();
-                btn.classList.remove('active');
+                e.stopPropagation();
+                handleTouchDirection(direction);
+                startTouchContinuousMovement(direction);
+                
+                // Visual feedback
+                button.style.transform = 'scale(0.9)';
+                button.style.background = 'rgba(255, 215, 0, 1)';
+            }, { passive: false });
+            
+            button.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 stopTouchContinuousMovement();
+                
+                // Reset visual feedback
+                button.style.transform = 'scale(1)';
+                button.style.background = 'rgba(212, 175, 55, 0.9)';
+            }, { passive: false });
+            
+            // Prevent context menu on long press
+            button.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
             });
-        });
+        }
     });
+    
+    // Mobile pause button
+    const pauseButton = document.getElementById('mobile-pause');
+    if (pauseButton) {
+        pauseButton.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (typeof window.togglePause === 'function' && window.gameRunning) {
+                window.togglePause();
+            }
+            
+            // Visual feedback
+            pauseButton.style.transform = 'scale(0.9)';
+        }, { passive: false });
+        
+        pauseButton.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            // Reset visual feedback
+            pauseButton.style.transform = 'scale(1)';
+        }, { passive: false });
+    }
+}
+
+function handleTouchStart(e) {
+    e.preventDefault();
+    
+    const touch = e.touches[0];
+    touchStartX = touch.clientX;
+    touchStartY = touch.clientY;
+    
+    // Handle double tap for pause
+    const now = Date.now();
+    if (now - lastTapTime < 300) {
+        if (typeof window.togglePause === 'function' && window.gameRunning) {
+            window.togglePause();
+        }
+        if (doubleTapTimer) {
+            clearTimeout(doubleTapTimer);
+            doubleTapTimer = null;
+        }
+    } else {
+        doubleTapTimer = setTimeout(() => {
+            doubleTapTimer = null;
+        }, 300);
+    }
+    lastTapTime = now;
+}
+
+function handleTouchMove(e) {
+    e.preventDefault();
+}
+
+function handleTouchEnd(e) {
+    e.preventDefault();
+    
+    if (!window.gameRunning || window.gamePaused) return;
+    
+    const touch = e.changedTouches[0];
+    const deltaX = touch.clientX - touchStartX;
+    const deltaY = touch.clientY - touchStartY;
+    
+    const minSwipeDistance = 30;
+    
+    if (Math.abs(deltaX) < minSwipeDistance && Math.abs(deltaY) < minSwipeDistance) {
+        return;
+    }
+    
+    let direction;
+    if (Math.abs(deltaX) > Math.abs(deltaY)) {
+        direction = deltaX > 0 ? 'right' : 'left';
+    } else {
+        direction = deltaY > 0 ? 'down' : 'up';
+    }
+    
+    handleTouchDirection(direction);
+    showSwipeIndicator(direction);
 }
 
 // Helper functions
@@ -328,33 +329,31 @@ function stopContinuousMovement() {
 }
 
 function startTouchContinuousMovement(direction) {
+    stopTouchContinuousMovement();
+    touchContinuousDirection = direction;
+    
     if (typeof window.setBoostMode === 'function') {
         window.setBoostMode(true);
     }
     
-    continuousMovementInterval = setInterval(() => {
-        if (!window.gameRunning || currentTouchDirection !== direction) {
-            stopTouchContinuousMovement();
+    touchContinuousInterval = setInterval(() => {
+        if (touchContinuousDirection && window.gameRunning && !window.gamePaused) {
+            handleTouchDirection(touchContinuousDirection);
         }
-    }, 50);
+    }, 100);
 }
 
 function stopTouchContinuousMovement() {
-    currentTouchDirection = null;
+    if (touchContinuousInterval) {
+        clearInterval(touchContinuousInterval);
+        touchContinuousInterval = null;
+    }
     
     if (typeof window.setBoostMode === 'function') {
         window.setBoostMode(false);
     }
     
-    if (touchHoldTimeout) {
-        clearTimeout(touchHoldTimeout);
-        touchHoldTimeout = null;
-    }
-    
-    if (continuousMovementInterval) {
-        clearInterval(continuousMovementInterval);
-        continuousMovementInterval = null;
-    }
+    touchContinuousDirection = null;
 }
 
 // Visual feedback functions - keep these but they won't be called
@@ -375,25 +374,29 @@ function triggerHapticFeedback() {
 
 // Visual swipe indicators
 function showSwipeIndicator(direction) {
-    const container = document.getElementById('game-container');
-    if (!container) return;
-    
-    const indicator = document.createElement('div');
-    indicator.className = `swipe-indicator swipe-${direction}`;
-    indicator.innerHTML = getDirectionArrow(direction);
-    
-    container.appendChild(indicator);
-    triggerHapticFeedback();
-    
-    setTimeout(() => indicator.remove(), 500);
-}
-
-function getDirectionArrow(direction) {
-    const arrows = {
+    const indicators = {
         'up': '↑',
         'down': '↓', 
         'left': '←',
         'right': '→'
     };
-    return arrows[direction] || '';
+    
+    const indicator = document.createElement('div');
+    indicator.className = 'swipe-indicator';
+    indicator.textContent = indicators[direction];
+    
+    const container = document.getElementById('game-container');
+    if (container) {
+        container.appendChild(indicator);
+        
+        setTimeout(() => {
+            if (indicator.parentNode) {
+                indicator.remove();
+            }
+        }, 500);
+    }
 }
+
+// Export functions for use by other modules
+window.handleTouchDirection = handleTouchDirection;
+window.triggerHapticFeedback = triggerHapticFeedback;

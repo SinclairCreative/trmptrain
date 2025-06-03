@@ -20,9 +20,9 @@ const twitterEffects = [
     { name: 'TV APPEARANCE', description: 'Communities worth more!', duration: 15000 }
 ];
 
-// Place Twitter Storm power-up randomly - DOUBLED FREQUENCY
+// Place Twitter Storm power-up randomly - INCREASED FREQUENCY
 function placeTweetStorm() {
-    if (Math.random() > 0.2 || twitterStorm || twitterStormActive) return; // Increased chance
+    if (Math.random() > 0.15 || twitterStorm || twitterStormActive) return; // Increased chance from 0.2 to 0.15
 
     let attempts = 0;
     twitterStorm = createRandomPosition();
@@ -37,14 +37,21 @@ function placeTweetStorm() {
         return;
     }
 
-    // Auto-remove after 10 seconds
+    console.log('Twitter Storm placed at', twitterStorm); // Debug log
+
+    // Auto-remove after 15 seconds (increased from 10)
     setTimeout(() => {
-        twitterStorm = null;
-    }, 10000);
+        if (twitterStorm) {
+            console.log('Twitter Storm expired');
+            twitterStorm = null;
+        }
+    }, 15000);
 }
 
 // Enhanced Twitter Storm activation
 function activateTwitterStorm() {
+    console.log('Twitter Storm activated!'); // Debug log
+    
     const effectIndex = Math.floor(Math.random() * twitterEffects.length);
     const effect = twitterEffects[effectIndex];
     
@@ -57,12 +64,14 @@ function activateTwitterStorm() {
     // Show message
     const message = document.createElement('div');
     message.className = 'twitter-message';
-    message.innerHTML = `<i class="fa fa-twitter"></i> TWITTER STORM: ${twitterStormEffect}!`;
+    message.innerHTML = `<i class="fab fa-twitter"></i> TWITTER STORM: ${twitterStormEffect}!`;
     message.style.top = '25%';
     document.getElementById('game-container').appendChild(message);
     
     setTimeout(() => {
-        message.remove();
+        if (message.parentNode) {
+            message.remove();
+        }
     }, 4000);
     
     // Apply effect based on name
@@ -71,28 +80,29 @@ function activateTwitterStorm() {
             // Double asset collection handled in main game
             break;
         case 'FAKE NEWS':
-            window.invincibilityMode = true; // Use window to ensure global access
+            if (typeof window !== 'undefined') {
+                window.invincibilityMode = true;
+            }
             break;
         case 'EXECUTIVE ORDER':
             if (typeof window.regulations !== 'undefined') {
-                window.regulations = [];
+                window.regulations.length = 0; // Clear all regulations
             }
             break;
         case 'LOYAL BASE':
             // Add length without penalty
-            if (typeof window.corporation !== 'undefined') {
+            if (typeof window.corporation !== 'undefined' && window.corporation.length > 0) {
+                const lastSegment = window.corporation[window.corporation.length - 1];
                 for (let i = 0; i < 3; i++) {
-                    const lastSegment = window.corporation[window.corporation.length - 1];
-                    if (lastSegment) {
-                        window.corporation.push({...lastSegment});
-                    }
+                    window.corporation.push({...lastSegment});
                 }
             }
             break;
         case 'TWITTER FLURRY':
             // Gain capital for each segment
             if (typeof window.capital !== 'undefined' && typeof window.corporation !== 'undefined') {
-                window.capital += Math.max(5, Math.floor(window.corporation.length * 0.5));
+                const bonus = Math.max(10, Math.floor(window.corporation.length * 2));
+                window.capital += bonus;
             }
             break;
         case 'TV APPEARANCE':
@@ -102,10 +112,12 @@ function activateTwitterStorm() {
             // Slow down game speed temporarily
             if (typeof window.gameSpeed !== 'undefined' && typeof window.setGameSpeed === 'function') {
                 const originalSpeed = window.gameSpeed;
-                window.setGameSpeed(originalSpeed * 1.5); // Slow down by 50%
+                window.setGameSpeed(Math.floor(originalSpeed * 1.8)); // Slow down significantly
                 
                 setTimeout(() => {
-                    window.setGameSpeed(originalSpeed); // Reset after duration
+                    if (typeof window.setGameSpeed === 'function') {
+                        window.updateGameSpeed(); // Reset to normal calculated speed
+                    }
                 }, effect.duration);
             }
             break;
@@ -117,8 +129,10 @@ function activateTwitterStorm() {
             endTwitterStorm();
         }, effect.duration);
     } else {
-        twitterStormActive = false;
-        twitterStormEffect = '';
+        setTimeout(() => {
+            twitterStormActive = false;
+            twitterStormEffect = '';
+        }, 100);
     }
 }
 
@@ -184,30 +198,39 @@ function createTwitterStormAnimation() {
     }
 }
 
-// Draw Twitter Storm on game canvas
+// Draw Twitter Storm on game canvas with better visibility
 function drawTwitterStorm() {
     if (!twitterStorm || typeof window.ctx === 'undefined' || typeof window.gridSize === 'undefined') return;
 
-    // Pulsating effect
-    const pulseSize = Math.sin(Date.now() / 150) * 1.5;
+    // Enhanced pulsating effect
+    const time = Date.now();
+    const pulseSize = Math.sin(time / 100) * 3;
+    const glowIntensity = (Math.sin(time / 200) + 1) * 0.5;
 
+    // Draw glow effect
+    window.ctx.shadowColor = '#1DA1F2';
+    window.ctx.shadowBlur = 15 + glowIntensity * 10;
+    
     window.ctx.fillStyle = '#1DA1F2';
     window.ctx.beginPath();
     window.ctx.arc(
         twitterStorm.x * window.gridSize + window.gridSize/2,
         twitterStorm.y * window.gridSize + window.gridSize/2,
-        (window.gridSize/2 - 2) + pulseSize,
+        (window.gridSize/2 - 1) + pulseSize,
         0, 
         Math.PI * 2
     );
     window.ctx.fill();
 
-    // Twitter bird icon
-    window.ctx.fillStyle = '#1DA1F2';
-    window.ctx.font = '14px FontAwesome';
+    // Reset shadow
+    window.ctx.shadowBlur = 0;
+
+    // Twitter bird icon with better visibility
+    window.ctx.fillStyle = '#FFFFFF';
+    window.ctx.font = 'bold 16px serif';
     window.ctx.textAlign = 'center';
     window.ctx.textBaseline = 'middle';
-    window.ctx.fillText('\uf099', twitterStorm.x * window.gridSize + window.gridSize/2, twitterStorm.y * window.gridSize + window.gridSize/2);
+    window.ctx.fillText('🐦', twitterStorm.x * window.gridSize + window.gridSize/2, twitterStorm.y * window.gridSize + window.gridSize/2);
 }
 
 // Check Twitter Storm collision
@@ -223,7 +246,7 @@ function checkTwitterStormCollision(head) {
     return false;
 }
 
-// Periodically try to place Twitter Storm - DOUBLED FREQUENCY
+// Periodically try to place Twitter Storm - INCREASED FREQUENCY
 function startTwitterStormSystem() {
     // Clear any existing interval first to avoid duplicates
     if (window.twitterStormInterval) {
@@ -234,7 +257,9 @@ function startTwitterStormSystem() {
         if (window.gameRunning && !window.gamePaused) {
             placeTweetStorm();
         }
-    }, 7500); // Changed from 15000 to 7500
+    }, 5000); // Changed from 7500 to 5000 for more frequent attempts
+    
+    console.log('Twitter Storm system started');
 }
 
 // Expose Twitter storm functions to window
