@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TR*MP TRAIN</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/layout.css">
+</head>
+<body>
+    <div class="game-wrapper">
+        <header>
+            <h1>TR*MP TRAIN</h1>
+            <p class="tagline">Build your empire. Declare bankruptcy. <br> Blame everyone else.</p>
+        </header>
+
+        <div class="news-ticker">
+            <div class="news-headline">Tr*mp announces 'biggest deal ever' with no details provided — Gold-plated properties mask mounting debts — New tax loopholes benefit real estate moguls</div>
+        </div>
+
+        <div class="stats-panel" style="display: none;">
+            <div class="stats-top-row">
+                <div class="stat-box wealth-stat">
+                    <div class="stat-label">CAPITAL</div>
+                    <div class="stat-value" id="capital">0M</div>
+                </div>
+                <div class="stat-box worker-stat">
+                    <div class="stat-label">WORKFORCE</div>
+                    <div class="stat-value" id="workforce">0</div>
+                </div>
+                <div class="stat-box crisis-stat">
+                    <div class="stat-label">LAYOFFS</div>
+                    <div class="stat-value" id="layoffs">0</div>
+                </div>
+                <div class="stat-box level-stat">
+                    <div class="stat-label">LEVEL</div>
+                    <div class="stat-value" id="level">1</div>
+                </div>
+            </div>
+            <div class="stats-bottom-row">
+                <div class="inequality-meter meter-container">
+                    <div class="meter-label">
+                        <span>INEQUALITY</span>
+                        <span id="inequality-value">0%</span>
+                    </div>
+                    <div class="meter-bar"></div>
+                </div>
+                <div class="crisis-meter meter-container">
+                    <div class="meter-label">
+                        <span>CRISIS</span>
+                        <span id="crisis-value">0%</span>
+                    </div>
+                    <div class="meter-bar"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="game-container">
+            <canvas id="game-canvas"></canvas>
+            
+            <!-- Start Screen -->
+            <div id="start-screen" class="screen active">
+                <div class="instructions">
+                    <h3 class="instructions-title">HOW TO PLAY</h3>
+                    
+                    <p class="instruction-intro">
+                        Collect assets, exploit workers, and avoid lawsuits on your way to the presidency.
+                    </p>
+                    
+                    <div class="instruction-row">
+                        <div class="instruction-item">
+                            <div class="instruction-icon wealth-icon">💰</div>
+                            <div class="instruction-text">
+                                <strong>Assets</strong>
+                                Collect gold assets to grow your empire
+                            </div>
+                        </div>
+                        <div class="instruction-item">
+                            <div class="instruction-icon worker-icon">👷</div>
+                            <div class="instruction-text">
+                                <strong>Workers</strong>
+                                Hire workers to boost asset values
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="instruction-row">
+                        <div class="instruction-item">
+                            <div class="instruction-icon people-icon">👥</div>
+                            <div class="instruction-text">
+                                <strong>Communities</strong>
+                                Exploit communities for quick cash
+                            </div>
+                        </div>
+                        <div class="instruction-item">
+                            <div class="instruction-icon regulation-icon">⚖️</div>
+                            <div class="instruction-text">
+                                <strong>Lawsuits</strong>
+                                Avoid red regulations or game over
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="instruction-row">
+                        <div class="instruction-item">
+                            <div class="instruction-icon twitter-icon">🐦</div>
+                            <div class="instruction-text">
+                                <strong>Twitter Storm</strong>
+                                Special power-ups with random effects
+                            </div>
+                        </div>
+                        <div class="instruction-item">
+                            <div class="instruction-icon boost-icon">⚡</div>
+                            <div class="instruction-text">
+                                <strong>Boost Mode</strong>
+                                Hold arrow keys for double speed
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Controls section moved from settings - now separate from instructions class -->
+                <div class="controls-section">
+                    <h3 class="instructions-title">CONTROLS</h3>
+                    <div class="control-grid">
+                        <div class="control-item">
+                            <div class="control-key">WASD / Arrows</div>
+                            <div class="control-action">Move</div>
+                        </div>
+                        <div class="control-item">
+                            <div class="control-key">Space</div>
+                            <div class="control-action">Pause</div>
+                        </div>
+                        <div class="control-item">
+                            <div class="control-key">Swipe</div>
+                            <div class="control-action">Move (Mobile)</div>
+                        </div>
+                        <div class="control-item">
+                            <div class="control-key">Double-tap</div>
+                            <div class="control-action">Pause (Mobile)</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="start-buttons">
+                    <button id="start-btn">START GAME</button>
+                    <button id="resume-game-btn" style="display: none;">RESUME GAME</button>
+                    <button id="settings-btn">SETTINGS</button>
+                </div>
+            </div>
+
+            <!-- Game Over Screen -->
+            <div id="game-over-screen" class="screen">
+                <h2 class="screen-title">EMPIRE COLLAPSED!</h2>
+                <div id="game-over-score">0M</div>
+                <div id="game-over-message">Your business empire has fallen!</div>
+                <div id="game-over-stats"></div>
+                <button id="play-again-btn">PLAY AGAIN</button>
+                <button id="menu-btn">MAIN MENU</button>
+            </div>
+
+            <!-- Settings Screen -->
+            <div id="settings-screen" class="screen">
+                <h2 class="screen-title">SETTINGS</h2>
+                <div class="settings-container">
+                    <div class="settings-section">
+                        <h3 class="settings-section-title">Gameplay</h3>
+                        <div class="settings-group">
+                            <button id="difficulty-btn">LAWSUITS: FAKE NEWS</button>
+                            <div class="setting-explanation">Higher difficulty = more lawsuits and faster gameplay</div>
+                            
+                            <div class="speed-setting">
+    <div class="setting-label">Game Speed:</div>
+    <div class="slider-container">
+        <span class="slider-label">SLOW</span>
+        <input type="range" id="speed-slider" min="60" max="120" step="5" value="90" class="setting-slider">
+        <span class="slider-label">FAST</span>
+    </div>
+    <div class="setting-value" id="speed-value">90ms</div>
+</div>
+                            
+                            <button id="auto-pause-btn">AUTO-PAUSE: OFF</button>
+                            <div class="setting-explanation">Pause when switching browser tabs</div>
+                        </div>
+                    </div>
+                    
+                    <div class="settings-section">
+                        <h3 class="settings-section-title">Audio & Visual</h3>
+                        <div class="settings-group">
+                            <div class="settings-row">
+                                <button id="sound-btn">SOUND: ON</button>
+                                <button id="haptic-btn">HAPTIC: ON</button>
+                            </div>
+                            <div class="setting-explanation">Vibration feedback available on mobile devices</div>
+                            
+                            <div class="settings-row">
+                                <button id="color-btn">SPRAY TAN: NORMAL</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <button id="back-btn">BACK</button>
+            </div>
+
+            <!-- Level Up Screen -->
+            <div id="level-up-screen" class="screen">
+                <div class="bankruptcy-title">
+                    <span>BANKRUPTCY #</span>
+                    <span id="bankruptcy-number">1</span>
+                </div>
+                <div class="bankruptcy-name" id="new-level">Taj Mahal</div>
+                <div class="bankruptcy-spacing"></div>
+                <p id="level-description">You've bankrupted the Taj Mahal! But you'll be back 'bigger than ever'!</p>
+                <button id="continue-btn">CONTINUE</button>
+            </div>
+
+            <!-- Crisis Warning -->
+            <div class="crisis-warning"></div>
+        </div>
+
+        <!-- Touch Controls -->
+        <div class="controls">
+            <button id="up" class="control-btn">↑</button>
+            <button id="left" class="control-btn">←</button>
+            <button id="right" class="control-btn">→</button>
+            <button id="down" class="control-btn">↓</button>
+        </div>
+    </div>
+
+    <!-- Fullscreen Button -->
+    <button id="floating-fullscreen-btn" class="fullscreen-btn">
+        <i class="fas fa-expand"></i>
+    </button>
+
+    <script src="js/controls.js"></script>
+    <script src="js/twitter-storm.js"></script>
+    <script src="js/game.js"></script>
+</body>
+</html>
