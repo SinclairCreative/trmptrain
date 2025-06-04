@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mobile Controls Test</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            padding: 20px; 
+            background: #222; 
+            color: white; 
+        }
+        .test-section { 
+            margin-bottom: 20px; 
+            padding: 15px; 
+            border: 1px solid #555; 
+            border-radius: 8px; 
+        }
+        .status { 
+            font-weight: bold; 
+            padding: 5px 10px; 
+            border-radius: 4px; 
+        }
+        .pass { background: #28a745; }
+        .fail { background: #dc3545; }
+        .info { color: #17a2b8; }
+    </style>
+</head>
+<body>
+    <h1>Mobile Controls Test Results</h1>
+    
+    <div class="test-section">
+        <h3>Device Detection</h3>
+        <div class="info">Touch Support: <span id="touch-support"></span></div>
+        <div class="info">Hover Capability: <span id="hover-capability"></span></div>
+        <div class="info">Pointer Type: <span id="pointer-type"></span></div>
+        <div class="info">Mobile Controls Should Show: <span id="mobile-show"></span></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>Media Query Tests</h3>
+        <div class="info">hover: none matches: <span id="hover-none"></span></div>
+        <div class="info">pointer: coarse matches: <span id="pointer-coarse"></span></div>
+        <div class="info">Combined query matches: <span id="combined-query"></span></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>Element Visibility Tests</h3>
+        <div class="info">Mobile controls visible: <span id="mobile-visible"></span></div>
+        <div class="info">Old controls hidden: <span id="old-controls-hidden"></span></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>Game Functionality</h3>
+        <div class="info">Game.js loaded: <span id="game-loaded"></span></div>
+        <div class="info">Controls.js loaded: <span id="controls-loaded"></span></div>
+        <div class="info">Mobile pause button removed: <span id="pause-removed"></span></div>
+    </div>
+
+    <script>
+        // Test touch support
+        document.getElementById('touch-support').textContent = 'ontouchstart' in window ? 'Yes' : 'No';
+        
+        // Test hover capability  
+        document.getElementById('hover-capability').textContent = window.matchMedia('(hover: hover)').matches ? 'Yes' : 'No';
+        
+        // Test pointer type
+        document.getElementById('pointer-type').textContent = window.matchMedia('(pointer: coarse)').matches ? 'Coarse (Touch)' : 'Fine (Mouse)';
+        
+        // Test if mobile controls should show
+        const shouldShowMobile = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+        document.getElementById('mobile-show').textContent = shouldShowMobile ? 'Yes' : 'No';
+        
+        // Test individual media queries
+        document.getElementById('hover-none').textContent = window.matchMedia('(hover: none)').matches ? 'Yes' : 'No';
+        document.getElementById('pointer-coarse').textContent = window.matchMedia('(pointer: coarse)').matches ? 'Yes' : 'No';
+        document.getElementById('combined-query').textContent = shouldShowMobile ? 'Yes' : 'No';
+        
+        // Test element visibility (would need to load actual page)
+        document.getElementById('mobile-visible').textContent = 'Test from main page';
+        document.getElementById('old-controls-hidden').textContent = 'Test from main page';
+        document.getElementById('game-loaded').textContent = 'Test from main page';
+        document.getElementById('controls-loaded').textContent = 'Test from main page';
+        document.getElementById('pause-removed').textContent = 'Test from main page';
+    </script>
+</body>
+</html>

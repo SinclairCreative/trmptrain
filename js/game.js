@@ -107,6 +107,11 @@ let speedrunMode = false;
 let darkMode = false;
 let newsUpdateInterval;
 
+// Level 8 timer variables
+let level8Timer = null;
+let level8StartTime = null;
+let level8Duration = 30000; // 30 seconds
+
 // Direction change control
 window.lastDirectionChange = Date.now();
 window.DIRECTION_CHANGE_DELAY = 0;
@@ -297,6 +302,17 @@ function startGame() {
         // Clear visual effects
         document.body.classList.remove('level-7', 'level-8');
         clearCapitalTexts();
+        
+        // Clear Level 8 timer if active
+        if (level8Timer) {
+            clearInterval(level8Timer);
+            level8Timer = null;
+        }
+        
+        const timerIndicator = document.getElementById('level8-timer-indicator');
+        if (timerIndicator) {
+            timerIndicator.classList.remove('show');
+        }
 
         // Initialize game objects
         corporation = [{ x: Math.floor(tileCount/2), y: Math.floor(tileCount/2) }];
@@ -445,6 +461,17 @@ function gameOver() {
     gameRunning = false;
     clearInterval(gameInterval);
     clearInterval(newsUpdateInterval);
+    
+    // Clear Level 8 timer if active
+    if (level8Timer) {
+        clearInterval(level8Timer);
+        level8Timer = null;
+    }
+    
+    const timerIndicator = document.getElementById('level8-timer-indicator');
+    if (timerIndicator) {
+        timerIndicator.classList.remove('show');
+    }
 
     document.querySelector('header').style.display = 'block';
     document.querySelector('.stats-panel').style.display = 'none';
@@ -764,6 +791,9 @@ function startNextLevel() {
         document.body.classList.add('level-8');
         invincibilityMode = true;
         showMessage("MELTDOWN MODE! You can't be stopped by walls or regulations!");
+        
+        // Start Level 8 timer
+        startLevel8Timer();
     }
 
     // Reset resources
@@ -1307,296 +1337,113 @@ function exposeGameAPI() {
     window.setGameSpeed = setGameSpeed;
     window.createRandomPosition = createRandomPosition;
     window.corporation = corporation;
-    window.gridSize = gridSize;
 }
 
-function toggleFullscreen() {
-    if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen().catch(err => {
-            console.log('Error attempting to enable fullscreen:', err.message);
+// Level 8 timer functions
+function startLevel8Timer() {
+    if (currentLevel !== 8) return;
+    
+    level8StartTime = Date.now();
+    
+    // Create timer indicator element
+    let timerIndicator = document.getElementById('level8-timer-indicator');
+    if (!timerIndicator) {
+        timerIndicator = document.createElement('div');
+        timerIndicator.id = 'level8-timer-indicator';
+        timerIndicator.className = 'level8-timer-indicator';
+        document.getElementById('game-container').appendChild(timerIndicator);
+    }
+    
+    // Start the timer countdown
+    level8Timer = setInterval(() => {
+        const elapsed = Date.now() - level8StartTime;
+        const remaining = Math.max(0, level8Duration - elapsed);
+        const secondsLeft = Math.ceil(remaining / 1000);
+        
+        timerIndicator.textContent = `MELTDOWN: ${secondsLeft}s`;
+        timerIndicator.classList.add('show');
+        
+        if (remaining <= 0) {
+            endLevel8Timer();
+        }
+    }, 100);
+}
+
+function endLevel8Timer() {
+    if (level8Timer) {
+        clearInterval(level8Timer);
+        level8Timer = null;
+    }
+    
+    const timerIndicator = document.getElementById('level8-timer-indicator');
+    if (timerIndicator) {
+        timerIndicator.classList.remove('show');
+    }
+    
+    // End the game or show level 8 ending screen
+    if (currentLevel === 8 && gameRunning) {
+        showLevel8Ending();
+    }
+}
+
+function showLevel8Ending() {
+    gameRunning = false;
+    clearInterval(gameInterval);
+    
+    // Hide timer indicator
+    const timerIndicator = document.getElementById('level8-timer-indicator');
+    if (timerIndicator) {
+        timerIndicator.classList.remove('show');
+    }
+    
+    // Create or show Level 8 ending screen
+    let endingScreen = document.getElementById('level8-ending-screen');
+    if (!endingScreen) {
+        endingScreen = document.createElement('div');
+        endingScreen.id = 'level8-ending-screen';
+        endingScreen.className = 'screen';
+        endingScreen.innerHTML = `
+            <div class="level8-ending-content">
+                <h1 class="level8-title">MAXIMUM CHAOS ACHIEVED!</h1>
+                <div class="level8-subtitle">You've survived the ultimate meltdown</div>
+                <div class="level8-stats">
+                    <div class="stat-item">
+                        <div class="stat-value">${formatCapital(capital)}</div>
+                        <div class="stat-label">Final Capital</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">${assetsConsumed}</div>
+                        <div class="stat-label">Assets Consumed</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">${layoffs}</div>
+                        <div class="stat-label">Total Layoffs</div>
+                    </div>
+                </div>
+                <div class="level8-buttons">
+                    <button id="level8-new-game-btn">NEW GAME</button>
+                    <button id="level8-menu-btn">MAIN MENU</button>
+                </div>
+            </div>
+        `;
+        document.getElementById('game-container').appendChild(endingScreen);
+        
+        // Add event listeners
+        document.getElementById('level8-new-game-btn').addEventListener('click', startGame);
+        document.getElementById('level8-menu-btn').addEventListener('click', () => {
+            endingScreen.classList.remove('active');
+            getElement('start-screen').classList.add('active');
+            document.querySelector('header').style.display = 'block';
+            document.querySelector('.stats-panel').style.display = 'none';
         });
-    } else {
-        if (document.exitFullscreen) {
-            document.exitFullscreen();
-        }
     }
-}
-
-function resizeCanvas() {
-    if (!canvas || !ctx) return;
-
-    const container = document.getElementById('game-container');
-    if (!container) return;
-
-    const containerWidth = container.clientWidth;
-    const containerHeight = container.clientHeight;
-
-    const availableSize = Math.min(containerWidth, containerHeight);
-    gridSize = Math.floor(availableSize / tileCount);
-
-    const canvasSize = gridSize * tileCount;
-
-    canvas.width = canvasSize;
-    canvas.height = canvasSize;
-    canvas.style.width = canvasSize + 'px';
-    canvas.style.height = canvasSize + 'px';
-
-    console.log(`Canvas resized: ${canvasSize}px, Grid size: ${gridSize}px, Tiles: ${tileCount}`);
-
-    if (gameRunning && !gamePaused) {
-        draw();
-    }
-}
-
-function isPositionOccupied(position) {
-    if (!position) return false;
-
-    for (let i = 0; i < corporation.length; i++) {
-        if (corporation[i].x === position.x && corporation[i].y === position.y) {
-            return true;
-        }
-    }
-
-    for (let i = 0; i < allAssets.length; i++) {
-        if (allAssets[i].x === position.x && allAssets[i].y === position.y) {
-            return true;
-        }
-    }
-
-    for (let i = 0; i < allLabor.length; i++) {
-        if (allLabor[i].x === position.x && allLabor[i].y === position.y) {
-            return true;
-        }
-    }
-
-    for (let i = 0; i < allCommunities.length; i++) {
-        if (allCommunities[i].x === position.x && allCommunities[i].y === position.y) {
-            return true;
-        }
-    }
-
-    for (let i = 0; i < regulations.length; i++) {
-        if (regulations[i].x === position.x && regulations[i].y === position.y) {
-            return true;
-        }
-    }
-
-    if (typeof twitterStorm !== 'undefined' && twitterStorm) {
-        if (twitterStorm.x === position.x && twitterStorm.y === position.y) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
-function checkCollision(position) {
-    for (let i = 1; i < corporation.length; i++) {
-        if (corporation[i].x === position.x && corporation[i].y === position.y) {
-            return true;
-        }
-    }
-    return false;
-}
-
-function checkRegulationCollision(position) {
-    for (let i = 0; i < regulations.length; i++) {
-        if (regulations[i].x === position.x && regulations[i].y === position.y) {
-            return true;
-        }
-    }
-    return false;
-}
-
-function handlePeriodicEffects() {
-    // Try to place Twitter Storm more frequently
-    if (Math.random() > 0.85 && typeof placeTweetStorm === 'function') {
-        placeTweetStorm();
-    }
-
-    // Update crisis level based on inequality
-    if (inequalityLevel > 60 && Math.random() > 0.7) {
-        crisisLevel = Math.min(crisisLevel + 5, 100);
-
-        if (crisisLevel > 80 && crisisWarnings < 3) {
-            showCrisisWarning();
-            crisisWarnings++;
-        }
-    }
-
-    // Chance to add regulation based on difficulty
-    if (currentDifficulty > 0 && Math.random() < (window.regulationFrequency || 0.3) / 10) {
-        addRegulation();
-    }
-
-    // Update news headlines
-    if (Math.random() > 0.7) {
-        updateNewsHeadline();
-    }
-}
-
-function updateNewsHeadline() {
-    // Select category based on game state
-    let category;
-    if (inequalityLevel > 70) {
-        category = 'inequality';
-    } else if (workforce > 10000) {
-        category = 'workforce';
-    } else if (regulations.length > 5) {
-        category = 'regulation';
-    } else if (currentPhase === PHASE.RECESSION) {
-        category = 'recession';
-    } else {
-        category = 'growth';
-    }
-
-    // Get random headline from category
-    if (newsHeadlines[category] && newsHeadlines[category].length > 0) {
-        const randomIndex = Math.floor(Math.random() * newsHeadlines[category].length);
-        const headline = newsHeadlines[category][randomIndex];
-
-        const newsElement = document.querySelector('.news-headline');
-        if (newsElement) {
-            newsElement.textContent = headline;
-        }
-    }
-}
-
-function startNewsTicker() {
-    // Clear any existing interval
-    if (newsUpdateInterval) {
-        clearInterval(newsUpdateInterval);
-    }
-
-    updateNewsHeadline();
-
-    // Update periodically
-    newsUpdateInterval = setInterval(() => {
-        if (gameRunning && !gamePaused && Math.random() > 0.5) {
-            updateNewsHeadline();
-        }
-    }, 10000);
-}
-
-function showCrisisWarning() {
-    const warningElement = document.querySelector('.crisis-warning');
-    if (!warningElement) return;
-
-    const warnings = [
-        "ECONOMIC WARNING: Inequality rising to dangerous levels!",
-        "SYSTEMIC RISK ALERT: Financial instability detected!",
-        "MARKET ALERT: Wealth concentration threatening stability!"
-    ];
-
-    const randomWarning = warnings[Math.floor(Math.random() * warnings.length)];
-    warningElement.textContent = randomWarning;
-    warningElement.classList.add('show');
-
-    setTimeout(() => {
-        warningElement.classList.remove('show');
-    }, 3000);
-}
-
-function updateStatDisplay() {
-    getElement('capital').textContent = formatCapital(capital);
-    getElement('workforce').textContent = Math.floor(workforce);
-    getElement('layoffs').textContent = layoffs;
-    getElement('level').textContent = currentLevel;
-
-    const inequalityBar = document.querySelector('.inequality-meter .meter-bar');
-    const inequalityValue = document.getElementById('inequality-value');
-    if (inequalityBar) inequalityBar.style.width = `${inequalityLevel}%`;
-    if (inequalityValue) inequalityValue.textContent = `${inequalityLevel}%`;
-
-    const crisisBar = document.querySelector('.crisis-meter .meter-bar');
-    const crisisValue = document.getElementById('crisis-value');
-    if (crisisBar) crisisBar.style.width = `${crisisLevel}%`;
-    if (crisisValue) crisisValue.textContent = `${crisisLevel}%`;
-
-    checkEconomicPhaseEffects();
-    updateGameSpeed();
-}
-
-function checkEconomicPhaseEffects() {
-    let newPhase = currentPhase;
-
-    if (crisisLevel > 80) {
-        newPhase = PHASE.DEPRESSION;
-    } else if (crisisLevel > 60) {
-        newPhase = PHASE.RECESSION;
-    } else if (crisisLevel > 40 && currentPhase === PHASE.RECESSION) {
-        newPhase = PHASE.RECOVERY;
-    } else if (crisisLevel < 30) {
-        newPhase = PHASE.GROWTH;
-    }
-
-    if (newPhase !== currentPhase) {
-        currentPhase = newPhase;
-        applyPhaseEffects();
-    }
-}
-
-function applyPhaseEffects() {
-    switch (currentPhase) {
-        case PHASE.GROWTH:
-            economicCycle = 1;
-            break;
-        case PHASE.RECESSION:
-            economicCycle = 0.7;
-            layoffs += Math.floor(workforce * 0.1);
-            workforce = Math.floor(workforce * 0.9);
-            break;
-        case PHASE.DEPRESSION:
-            economicCycle = 0.4;
-            layoffs += Math.floor(workforce * 0.2);
-            workforce = Math.floor(workforce * 0.8);
-            break;
-        case PHASE.RECOVERY:
-            economicCycle = 0.8;
-            break;
-    }
-}
-
-// Make sure moveSnakeAwayFromWalls is properly implemented
-function moveSnakeAwayFromWalls() {
-    if (!corporation || corporation.length === 0) return;
-
-    const head = corporation[0];
-    const SAFE_DISTANCE = 2;
-
-    let needsMove = false;
-    let moveX = 0;
-    let moveY = 0;
-
-    // Check proximity to walls
-    if (head.x < SAFE_DISTANCE) {
-        moveX = SAFE_DISTANCE - head.x;
-        needsMove = true;
-    } else if (head.x >= tileCount - SAFE_DISTANCE) {
-        moveX = (tileCount - SAFE_DISTANCE - 1) - head.x;
-        needsMove = true;
-    }
-
-    if (head.y < SAFE_DISTANCE) {
-        moveY = SAFE_DISTANCE - head.y;
-        needsMove = true;
-    } else if (head.y >= tileCount - SAFE_DISTANCE) {
-        moveY = (tileCount - SAFE_DISTANCE - 1) - head.y;
-        needsMove = true;
-    }
-
-    // Move the entire snake if needed
-    if (needsMove) {
-        for (let i = 0; i < corporation.length; i++) {
-            corporation[i].x += moveX;
-            corporation[i].y += moveY;
-
-            // Ensure we don't move out of bounds
-            corporation[i].x = Math.max(0, Math.min(tileCount - 1, corporation[i].x));
-            corporation[i].y = Math.max(0, Math.min(tileCount - 1, corporation[i].y));
-        }
-
-        console.log(`Moved snake away from walls by (${moveX}, ${moveY})`);
+    
+    endingScreen.classList.add('active');
+    
+    // Update high score if needed
+    if (capital > highScore) {
+        highScore = capital;
+        localStorage.setItem('capitalHighScore', highScore);
     }
 }
 
@@ -1627,59 +1474,24 @@ function saveGameState() {
         allLabor: [...allLabor],
         allCommunities: [...allCommunities],
         sprayTanIntensity,
-        gameSpeed
+        gameSpeed,
+        level8StartTime,
+        level8TimerActive: level8Timer !== null
     };
 }
 
-// Add function to start game from saved state
+// Replace the last initialization line with these two properly separated calls
+document.addEventListener('DOMContentLoaded', init);
+
+document.addEventListener('DOMContentLoaded', () => {
+    ensureFontAwesomeLoaded();
+});
+
+// Restore game state from savedGameState
 function startGameFromSaved() {
-    if (!savedGameState) {
-        startGame();
-        return;
-    }
+    if (!savedGameState) return;
 
-    document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
-
-    restoreGameState();
-    savedGameState = null; // Clear after restoring
-
-    document.body.classList.remove('level-7', 'level-8');
-    clearCapitalTexts();
-
-    // Update visuals for current level
-    if (currentLevel === 7) {
-        document.documentElement.style.setProperty('--corp-color', '#e63946');
-        document.body.classList.add('level-7');
-    } else if (currentLevel === 8) {
-        document.documentElement.style.setProperty('--corp-color', '#ff0000');
-        document.body.classList.add('level-8');
-    }
-
-    // Show/hide UI elements
-    const header = document.querySelector('header');
-    const statsPanel = document.querySelector('.stats-panel');
-    if (header) header.style.display = 'none';
-    if (statsPanel) statsPanel.style.display = 'flex';
-
-    // Reset game state for running
-    gamePaused = false;
-    gameRunning = true;
-
-    clearInterval(gameInterval);
-    gameInterval = setInterval(gameLoop, gameSpeed);
-
-    // Hide resume button
-    const resumeBtn = document.getElementById('resume-game-btn');
-    if (resumeBtn) resumeBtn.style.display = 'none';
-
-    draw(); // Force initial draw
-    console.log("Game resumed from saved state");
-}
-
-// Implement restore game state functionality
-function restoreGameState() {
-    if (!savedGameState) return false;
-
+    // Restore basic game state
     capital = savedGameState.capital;
     workforce = savedGameState.workforce;
     layoffs = savedGameState.layoffs;
@@ -1687,7 +1499,7 @@ function restoreGameState() {
     assetsConsumed = savedGameState.assetsConsumed;
     inequalityLevel = savedGameState.inequalityLevel;
     crisisLevel = savedGameState.crisisLevel;
-    regulations = [...savedGameState.regulations];
+    regulations = savedGameState.regulations;
     currentPhase = savedGameState.currentPhase;
     crisisWarnings = savedGameState.crisisWarnings;
     gameTickCount = savedGameState.gameTickCount;
@@ -1696,35 +1508,180 @@ function restoreGameState() {
     boostMode = savedGameState.boostMode;
     boostTickCounter = savedGameState.boostTickCounter;
     assetsForNextCycle = savedGameState.assetsForNextCycle;
-    corporation = [...savedGameState.corporation];
+
+    // Restore snake position and velocity
+    corporation = savedGameState.corporation;
     velocityX = savedGameState.velocityX;
     velocityY = savedGameState.velocityY;
-    lastDirection = {...savedGameState.lastDirection};
-    allAssets = [...savedGameState.allAssets];
-    allLabor = [...savedGameState.allLabor];
-    allCommunities = [...savedGameState.allCommunities];
+    lastDirection = savedGameState.lastDirection;
+
+    // Restore resources
+    allAssets = savedGameState.allAssets;
+    allLabor = savedGameState.allLabor;
+    allCommunities = savedGameState.allCommunities;
+
     sprayTanIntensity = savedGameState.sprayTanIntensity;
     gameSpeed = savedGameState.gameSpeed;
-
+    
+    // Restore Level 8 timer if it was active
+    if (savedGameState.level8TimerActive && currentLevel === 8) {
+        level8StartTime = savedGameState.level8StartTime;
+        startLevel8Timer();
+    }
+    
     // Update display
     updateStatDisplay();
-
-    // Apply level-specific effects
-    if (currentLevel === 7) {
-        document.documentElement.style.setProperty('--corp-color', '#e63946');
-        document.body.classList.add('level-7');
-    } else if (currentLevel === 8) {
-        document.documentElement.style.setProperty('--corp-color', '#ff0000');
-        document.body.classList.add('level-8');
-    }
-
-    return true;
 }
 
-// Update createGameStyles to ensure icon colors with FontAwesome preloading
+// Toggle fullscreen mode
+function toggleFullscreen() {
+    if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(err => {
+            console.log('Error attempting to enable fullscreen:', err.message);
+        });
+    } else {
+        if (document.exitFullscreen) {
+            document.exitFullscreen();
+        }
+    }
+}
+
+// Resize canvas to fit container while maintaining aspect ratio
+function resizeCanvas() {
+    if (!canvas || !ctx) return;
+    
+    const container = document.getElementById('game-container');
+    if (!container) return;
+    
+    const containerWidth = container.clientWidth;
+    const containerHeight = container.clientHeight;
+    
+    const availableSize = Math.min(containerWidth, containerHeight);
+    gridSize = Math.floor(availableSize / tileCount);
+    
+    const canvasSize = gridSize * tileCount;
+    
+    canvas.width = canvasSize;
+    canvas.height = canvasSize;
+    canvas.style.width = canvasSize + 'px';
+    canvas.style.height = canvasSize + 'px';
+    
+    console.log(`Canvas resized: ${canvasSize}px, Grid size: ${gridSize}px, Tiles: ${tileCount}`);
+    
+    if (gameRunning && !gamePaused) {
+        draw();
+    }
+}
+
+// Check if a position is occupied by any game element
+function isPositionOccupied(position) {
+    if (!position) return false;
+    
+    for (let i = 0; i < corporation.length; i++) {
+        if (corporation[i].x === position.x && corporation[i].y === position.y) {
+            return true;
+        }
+    }
+    
+    for (let i = 0; i < allAssets.length; i++) {
+        if (allAssets[i].x === position.x && allAssets[i].y === position.y) {
+            return true;
+        }
+    }
+    
+    for (let i = 0; i < allLabor.length; i++) {
+        if (allLabor[i].x === position.x && allLabor[i].y === position.y) {
+            return true;
+        }
+    }
+    
+    for (let i = 0; i < allCommunities.length; i++) {
+        if (allCommunities[i].x === position.x && allCommunities[i].y === position.y) {
+            return true;
+        }
+    }
+    
+    for (let i = 0; i < regulations.length; i++) {
+        if (regulations[i].x === position.x && regulations[i].y === position.y) {
+            return true;
+        }
+    }
+    
+    if (typeof twitterStorm !== 'undefined' && twitterStorm) {
+        if (twitterStorm.x === position.x && twitterStorm.y === position.y) {
+            return true;
+        }
+    }
+    
+    return false;
+}
+
+// Update the statistics display on the UI
+function updateStatDisplay() {
+    getElement('capital').textContent = formatCapital(capital);
+    getElement('workforce').textContent = Math.floor(workforce);
+    getElement('layoffs').textContent = layoffs;
+    getElement('level').textContent = currentLevel;
+    
+    const inequalityBar = document.querySelector('.inequality-meter .meter-bar');
+    const inequalityValue = document.getElementById('inequality-value');
+    if (inequalityBar) inequalityBar.style.width = `${inequalityLevel}%`;
+    if (inequalityValue) inequalityValue.textContent = `${inequalityLevel}%`;
+    
+    const crisisBar = document.querySelector('.crisis-meter .meter-bar');
+    const crisisValue = document.getElementById('crisis-value');
+    if (crisisBar) crisisBar.style.width = `${crisisLevel}%`;
+    if (crisisValue) crisisValue.textContent = `${crisisLevel}%`;
+    
+    checkEconomicPhaseEffects();
+}
+
+// Check and update economic phase based on crisis level
+function checkEconomicPhaseEffects() {
+    let newPhase = currentPhase;
+    
+    if (crisisLevel > 80) {
+        newPhase = PHASE.DEPRESSION;
+    } else if (crisisLevel > 60) {
+        newPhase = PHASE.RECESSION;
+    } else if (crisisLevel > 40 && currentPhase === PHASE.RECESSION) {
+        newPhase = PHASE.RECOVERY;
+    } else if (crisisLevel < 30) {
+        newPhase = PHASE.GROWTH;
+    }
+    
+    if (newPhase !== currentPhase) {
+        currentPhase = newPhase;
+        applyPhaseEffects();
+    }
+}
+
+// Apply effects based on current economic phase
+function applyPhaseEffects() {
+    switch (currentPhase) {
+        case PHASE.GROWTH:
+            economicCycle = 1;
+            break;
+        case PHASE.RECESSION:
+            economicCycle = 0.7;
+            layoffs += Math.floor(workforce * 0.1);
+            workforce = Math.floor(workforce * 0.9);
+            break;
+        case PHASE.DEPRESSION:
+            economicCycle = 0.4;
+            layoffs += Math.floor(workforce * 0.2);
+            workforce = Math.floor(workforce * 0.8);
+            break;
+        case PHASE.RECOVERY:
+            economicCycle = 0.8;
+            break;
+    }
+}
+
+// Create dynamic styles for the game including FontAwesome icons
 function createGameStyles() {
     if (document.getElementById('game-dynamic-styles')) return;
-
+    
     const style = document.createElement('style');
     style.id = 'game-dynamic-styles';
     style.textContent = `
@@ -1776,7 +1733,7 @@ function createGameStyles() {
         }
     `;
     document.head.appendChild(style);
-
+    
     // Ensure FontAwesome is properly loaded
     ensureFontAwesomeLoaded();
 }
@@ -1789,7 +1746,7 @@ function ensureFontAwesomeLoaded() {
     testIcon.style.position = 'absolute';
     testIcon.style.visibility = 'hidden';
     document.body.appendChild(testIcon);
-
+    
     // If font isn't loaded properly, manually inject it
     if (getComputedStyle(testIcon).fontFamily.indexOf('FontAwesome') === -1) {
         console.log("FontAwesome not detected, adding font link");
@@ -1798,7 +1755,7 @@ function ensureFontAwesomeLoaded() {
         fontLink.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css';
         document.head.appendChild(fontLink);
     }
-
+    
     // Remove test element
     setTimeout(() => {
         if (testIcon.parentNode) {
@@ -1806,10 +1763,3 @@ function ensureFontAwesomeLoaded() {
         }
     }, 1000);
 }
-
-// Replace the last initialization line with these two properly separated calls
-document.addEventListener('DOMContentLoaded', init);
-
-document.addEventListener('DOMContentLoaded', () => {
-    ensureFontAwesomeLoaded();
-});

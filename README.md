@@ -1,6 +1,6 @@
 # TR*MP TRAIN
 
-TR*MP TRAIN is a retro style snake-like browser game presented in the spirit of parody. Collect assets, employ workers and avoid lawsuits as your corporation grows from humble beginnings to the highest office.
+TR*MP TRAIN is a retro style snake-like browser game parodizing the orange man's life. Collect assets, employ workers and avoid lawsuits as your corporation grows from humble beginnings to the highest office.
 
 ## Playing the Game
 
@@ -240,4 +240,4 @@ See [LICENSE.txt](LICENSE.txt) for license information. This project is provided
 
 ---
 
-*"The game features multiple bankruptcies, lawsuits, and questionable business practices - just like in real life!"*
+*The game features multiple bankruptcies, lawsuits, and questionable business practices - just like the man himself*

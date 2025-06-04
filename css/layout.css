@@ -189,13 +189,13 @@ header {
 
 /* Mobile touch controls */
 .mobile-controls {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
     display: none;
     z-index: 1000;
-    gap: 15px;
-    align-items: flex-end;
+    margin-bottom: 10px;
 }
 
 .mobile-dpad {
@@ -255,41 +255,18 @@ header {
     transform: scale(0.95);
 }
 
-.mobile-pause-btn {
-    width: 50px;
-    height: 50px;
-    background: rgba(220, 53, 69, 0.9);
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    border-radius: 50%;
-    color: white;
-    font-size: 20px;
-    cursor: pointer;
-    user-select: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s;
-    touch-action: manipulation;
-}
-
-.mobile-pause-btn:active {
-    background: rgba(220, 53, 69, 1);
-    transform: scale(0.95);
-}
-
-/* Show mobile controls on touch devices */
+/* Only show mobile controls on touch devices - hide completely on desktop */
 @media (hover: none) and (pointer: coarse) {
     .mobile-controls {
-        display: flex;
+        display: block;
     }
 }
 
 /* Mobile responsive adjustments */
-@media (max-width: 768px) {
+@media (max-width: 768px) and (hover: none) {
     .mobile-controls {
-        display: flex;
-        bottom: 15px;
-        right: 15px;
+        display: block;
+        margin-bottom: 15px;
     }
     
     .mobile-dpad {
@@ -302,19 +279,11 @@ header {
         height: 30px;
         font-size: 14px;
     }
-    
-    .mobile-pause-btn {
-        width: 45px;
-        height: 45px;
-        font-size: 18px;
-    }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 480px) and (hover: none) {
     .mobile-controls {
-        bottom: 10px;
-        right: 10px;
-        gap: 10px;
+        margin-bottom: 10px;
     }
     
     .mobile-dpad {
@@ -326,12 +295,6 @@ header {
         width: 28px;
         height: 28px;
         font-size: 12px;
-    }
-    
-    .mobile-pause-btn {
-        width: 40px;
-        height: 40px;
-        font-size: 16px;
     }
 }
 

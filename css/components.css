@@ -991,6 +991,86 @@ i.fa-bolt {
     .resume-hint {
         font-size: 0.35rem;
     }
+    
+    .stats-panel {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background: var(--secondary);
+        backdrop-filter: blur(10px);
+    }
+    
+    .stat-box {
+        padding: 6px 8px;
+        min-width: 80px;
+    }
+    
+    .stat-value {
+        font-size: 0.6rem;
+    }
+    
+    .stat-label {
+        font-size: 0.4rem;
+    }
+    
+    button {
+        min-height: 44px; /* iOS touch target minimum */
+        min-width: 44px;
+        font-size: 0.7rem;
+        padding: 8px 16px;
+    }
+    
+    .screen button {
+        margin: 8px;
+        border-radius: 8px;
+    }
+    
+    .fullscreen-btn {
+        width: 36px;
+        height: 36px;
+        top: 8px;
+        right: 8px;
+        font-size: 0.8rem;
+    }
+    
+    .fullscreen-btn i {
+        font-size: 0.7rem;
+    }
+    
+    .instructions {
+        padding: 15px;
+        margin: 15px 0;
+        max-width: 100%;
+    }
+    
+    .instructions-title {
+        font-size: 0.8rem;
+        margin-bottom: 12px;
+    }
+    
+    .instruction-row {
+        gap: 15px;
+        margin-bottom: 10px;
+    }
+    
+    .instruction-item {
+        min-width: 180px;
+        gap: 6px;
+    }
+    
+    .instruction-icon {
+        font-size: 0.9rem;
+        width: 18px;
+    }
+    
+    .instruction-text {
+        font-size: 0.4rem;
+    }
+    
+    .start-buttons {
+        gap: 10px;
+        margin-top: 20px;
+    }
 }
 
 @media (max-width: 480px) {
@@ -1058,6 +1138,73 @@ i.fa-bolt {
     #start-screen .control-action {
         font-size: 0.35rem;
     }
+}
+
+/* Level 8 Ending Screen */
+#level8-ending-screen {
+    background-color: rgba(220, 20, 60, 0.95) !important;
+    backdrop-filter: blur(10px);
+}
+
+#level8-ending-screen h2 {
+    color: #fff !important;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+    margin-bottom: 30px;
+}
+
+#level8-ending-screen button {
+    border: 2px solid transparent;
+    border-radius: 6px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    min-width: 120px;
+}
+
+#level8-ending-screen button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.4);
+}
+
+#level8-ending-screen button:active {
+    transform: translateY(0);
+}
+
+#level8-new-game-btn:hover {
+    background: #fff !important;
+    color: var(--corp-color) !important;
+    border-color: var(--corp-color) !important;
+}
+
+#level8-menu-btn:hover {
+    background: rgba(255,255,255,0.4) !important;
+    border-color: #fff !important;
+}
+
+/* Level 8 timer indicator (optional visual feedback) */
+.level8-timer-indicator {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: rgba(220, 20, 60, 0.8);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 20px;
+    font-size: 0.4rem;
+    z-index: 50;
+    display: none;
+}
+
+.level8-timer-indicator.show {
+    display: block;
+    animation: pulse-timer 1s ease-in-out infinite alternate;
+}
+
+@keyframes pulse-timer {
+    from { opacity: 0.7; transform: scale(1); }
+    to { opacity: 1; transform: scale(1.05); }
 }
 
 /* Animations */
@@ -1315,4 +1462,90 @@ i.fa-bolt {
         font-size: 0.7rem;
         width: 14px;
     }
+}
+
+/* Level 8 ending screen */
+.level8-ending-content {
+    text-align: center;
+    padding: 2rem;
+}
+
+.level8-title {
+    font-size: 2.5rem;
+    color: #fff;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+    margin-bottom: 1rem;
+    animation: gold-shimmer 2s ease-in-out infinite;
+}
+
+.level8-subtitle {
+    font-size: 1.2rem;
+    color: #ffd700;
+    margin-bottom: 2rem;
+}
+
+.level8-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+    margin: 2rem 0;
+}
+
+.level8-stats .stat-item {
+    text-align: center;
+}
+
+.level8-stats .stat-value {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #ffd700;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+}
+
+.level8-stats .stat-label {
+    font-size: 0.9rem;
+    color: #fff;
+    margin-top: 0.5rem;
+}
+
+.level8-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-top: 2rem;
+}
+
+.level8-buttons button {
+    padding: 12px 24px;
+    font-size: 1rem;
+    background: transparent;
+    color: #fff;
+    border: 2px solid #fff;
+    border-radius: 6px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    min-width: 120px;
+}
+
+#level8-ending-screen button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.4);
+}
+
+#level8-ending-screen button:active {
+    transform: translateY(0);
+}
+
+#level8-new-game-btn:hover {
+    background: #fff !important;
+    color: var(--corp-color) !important;
+    border-color: var(--corp-color) !important;
+}
+
+#level8-menu-btn:hover {
+    background: rgba(255,255,255,0.4) !important;
+    border-color: #fff !important;
 }

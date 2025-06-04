@@ -151,29 +151,6 @@ function setupMobileControls() {
             });
         }
     });
-    
-    // Mobile pause button
-    const pauseButton = document.getElementById('mobile-pause');
-    if (pauseButton) {
-        pauseButton.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            if (typeof window.togglePause === 'function' && window.gameRunning) {
-                window.togglePause();
-            }
-            
-            // Visual feedback
-            pauseButton.style.transform = 'scale(0.9)';
-        }, { passive: false });
-        
-        pauseButton.addEventListener('touchend', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            
-            // Reset visual feedback
-            pauseButton.style.transform = 'scale(1)';
-        }, { passive: false });
-    }
 }
 
 function handleTouchStart(e) {
